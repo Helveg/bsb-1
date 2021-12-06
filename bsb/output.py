@@ -262,9 +262,57 @@ class MorphologyRepository(HDF5TreeHandler):
         """
         Import and store .swc file contents as a morphology in the repository.
         """
-        raise NotImplementedError("SWC temporarily unsupported.")
+        raise NotImplementedError(
+            "SWC temporarily unsupported. Use the `arbor` library to parse SWC, then pass the result to `.import_arbor`."
+        )
         # Read as CSV
         swc_data = np.loadtxt(file)
+
+    def import_arbor(self, morphology, labels, name, overwrite=False):
+        import arbor
+
+        decor = arbor.decor()
+        cc = arbor.cable_cell(morphology, labels, decor)
+        morpho_roots = set(
+            i
+            for i in range(morphology.num_branches)
+            if morphology.branch_parent(i) == 4294967295
+        )
+        print("roots in arbor m", morpho_roots)
+        parent = None
+        roots = []
+        stack = []
+        cable_id = morpho_roots.pop()
+        while True:
+            segments = morphology.branch_segments(cable_id)
+            if not segments:
+                branch = Branch([], [], [], [])
+            else:
+                x = [segments[0].prox.x] + [s.dist.x for s in segments]
+                y = [segments[0].prox.y] + [s.dist.y for s in segments]
+                z = [segments[0].prox.z] + [s.dist.z for s in segments]
+                r = [segments[0].prox.radius] + [s.dist.radius for s in segments]
+                branch = Branch(x, y, z, r)
+            branch._cable_id = cable_id
+            if parent:
+                parent.attach_child(branch)
+            else:
+                roots.append(branch)
+            children = morphology.branch_children(cable_id)
+            if children:
+                stack.extend((branch, child) for child in reversed(children))
+            if stack:
+                parent, cable_id = stack.pop()
+            elif not morpho_roots:
+                break
+            else:
+                parent = None
+                cable_id = morpho_roots.pop()
+        morpho = Morphology(roots)
+        for i, branch in enumerate(morpho.branches):
+            assert branch._cable_id == i
+
+        self.save_morphology(name, morpho, overwrite=overwrite)
 
     def import_arbz(self, name, cls, overwrite=False):
         """

@@ -251,13 +251,12 @@ class MorphologyRepository(HDF5TreeHandler):
         handle = HDF5TreeHandler.get_handle(self, mode)
         if handle.mode != "r":
             # Repository structure missing from resource? Create it.
-            self.initialise_repo_structure(handle)
+            self._init_repo(handle)
         # Return the handle to the resource.
         return handle
 
-    def initialise_repo_structure(self, handle):
-        if "morphologies" not in handle:
-            handle.create_group("morphologies")
+    def _init_repo(self, handle):
+        handle.require_group("morphologies")
 
     def import_swc(self, file, name, overwrite=False):
         """
@@ -964,7 +963,7 @@ class HDF5Formatter(OutputFormatter, MorphologyRepository):
                         del resource()["/morphologies"]
                     backup.copy("/morphologies", resource())
             else:  # Fresh compilation
-                self.initialise_repo_structure(resource())
+                self._init_repo(resource())
                 if self.morphology_repository is not None:  # Repo specified
                     self.import_repository(self.scaffold.morphology_repository)
 

@@ -129,7 +129,7 @@ class Branch:
         """
         Return the vectors of this branch as a matrix.
         """
-        return np.column_stack(tuple(getattr(self, v) for v in type(self).vectors))
+        return self.as_matrix(with_radius=True)
 
     @property
     def size(self):

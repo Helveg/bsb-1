@@ -5,6 +5,9 @@ import bsb.output, test_setup
 from bsb.morphologies import Morphology, Branch
 from bsb.exceptions import *
 
+# TODO: Add tests for new arc functions, point introduction and `as_matrix`.
+# TODO: Add tests for new arbor first import and morpho flow.
+
 
 class TestRepositories(unittest.TestCase):
     def test_empty_repository(self):

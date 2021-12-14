@@ -335,9 +335,12 @@ class Branch:
         :returns: The index of the new point.
         :rtype: int
         """
+        print("Checking arc val", arc_val)
         arc = self.as_arc()
+        print("Arc of", len(arc), "elements")
         arc_point_floor = self.floor_arc_point(arc_val)
         arc_point_ceil = self.ceil_arc_point(arc_val)
+        print("floor", arc_point_floor, "ceil", arc_point_ceil)
         arc_floor = arc[arc_point_floor]
         arc_ceil = arc[arc_point_ceil]
         point_floor = self[arc_point_floor]

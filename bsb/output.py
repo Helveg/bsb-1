@@ -283,7 +283,9 @@ class MorphologyRepository(HDF5TreeHandler):
         stack = []
         cable_id = morpho_roots.pop()
         while True:
+            print("--- processing", cable_id)
             segments = morphology.branch_segments(cable_id)
+            print(len(segments), "segments")
             if not segments:
                 branch = Branch([], [], [], [])
             else:
@@ -294,19 +296,28 @@ class MorphologyRepository(HDF5TreeHandler):
                 branch = Branch(x, y, z, r)
             branch._cable_id = cable_id
             if parent:
+                print("cable_id has parent", parent._cable_id)
                 parent.attach_child(branch)
             else:
                 roots.append(branch)
             children = morphology.branch_children(cable_id)
             if children:
+                print("added", len(children), f"child cables ({children}) to the stack")
                 stack.extend((branch, child) for child in reversed(children))
+                print("next cable should be", children[0])
             if stack:
+                print(len(stack), "items on stack")
                 parent, cable_id = stack.pop()
+                print("next parent and cable:", parent._cable_id, cable_id)
             elif not morpho_roots:
+                print("out of roots, exiting")
                 break
             else:
                 parent = None
                 cable_id = morpho_roots.pop()
+                print(morphology.branch_parent(cable_id))
+                print("continuing with next root", cable_id)
+
         morpho = Morphology(roots)
         branches = morpho.branches
         branch_map = {branch._cable_id: branch for branch in branches}
@@ -315,6 +326,7 @@ class MorphologyRepository(HDF5TreeHandler):
             if "excl:" in label or label == "all":
                 continue
             label_cables = cc.cables(f'"{label}"')
+            print(label, label_cables)
             for cable in label_cables:
                 cable_id = cable.branch
                 branch = branch_map[cable_id]
@@ -322,9 +334,12 @@ class MorphologyRepository(HDF5TreeHandler):
                     branch.label(label)
                 else:
                     prox_index = branch.get_arc_point(cable.prox, eps=1e-7)
+                    print(branch.as_arc())
+                    print("prox arc point", prox_index)
                     if prox_index is None:
                         prox_index = branch.introduce_arc_point(cable.prox)
                     dist_index = branch.get_arc_point(cable.dist, eps=1e-7)
+                    print("dist arc point", dist_index)
                     if dist_index is None:
                         dist_index = branch.introduce_arc_point(cable.dist)
                     mask = np.array(

@@ -4,6 +4,7 @@ from .voxels import VoxelCloud, detect_box_compartments, Box
 from sklearn.neighbors import KDTree
 from .exceptions import *
 from .reporting import report
+import operator
 
 
 class Compartment:
@@ -160,7 +161,7 @@ class Branch:
         """
         self._full_labels.extend(labels)
 
-    def label_points(self, label, mask):
+    def label_points(self, label, mask, join=operator.or_):
         """
         Add labels to specific points on the branch. See :func:`label
         <.morphologies.Morphology.label>` to label the entire branch.
@@ -169,8 +170,16 @@ class Branch:
         :type label: str
         :param mask: Boolean mask equal in size to the branch that determines which points get labelled.
         :type mask: np.ndarray(dtype=bool, shape=(branch_size,))
+        :param join: The operation to use to combine the new labels with the existing
+          labels. Defaults to ``|`` (``operator.or_``).
+        :type join: operator function
         """
-        self._label_masks[label] = np.array(mask, dtype=bool)
+        mask = np.array(mask, dtype=bool)
+        if label in self._label_masks:
+            labels = self._label_masks[label]
+            self._label_masks[label] = join(labels, mask)
+        else:
+            self._label_masks[label] = mask
 
     @property
     def children(self):

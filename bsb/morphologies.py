@@ -304,6 +304,17 @@ class Branch:
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 
+    def as_matrix(self, with_radius=False):
+        # Get all the branch vectors unless not `with_radius`, then filter out `radii`.
+        vector_names = (v for v in type(self).vectors if with_radius or v != "radii")
+        vectors = list(getattr(self, name) for name in vector_names)
+        return np.column_stack(vectors)
+
+    def as_arc(self):
+        arc_distances = np.sqrt(np.sum(np.diff(self.as_matrix(), axis=0) ** 2, axis=1))
+        arc_length = np.sum(arc_distances)
+        return np.cumsum(np.concatenate(([0], arc_distances))) / arc_length
+
 
 def _pairwise_iter(walk_iter, labels_iter):
     try:

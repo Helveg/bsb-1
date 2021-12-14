@@ -315,6 +315,9 @@ class Branch:
         arc_length = np.sum(arc_distances)
         return np.cumsum(np.concatenate(([0], arc_distances))) / arc_length
 
+    def __getitem__(self, slice):
+        return self.as_matrix(with_radius=True)[slice]
+
 
 def _pairwise_iter(walk_iter, labels_iter):
     try:

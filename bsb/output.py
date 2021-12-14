@@ -12,6 +12,7 @@ from .models import ConnectivitySet, PlacementSet
 from sklearn.neighbors import KDTree
 import os, sys, functools
 import itertools as it
+import arbor
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "dbbs-models"))
 

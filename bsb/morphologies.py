@@ -326,6 +326,28 @@ class Branch:
             new_mask = np.concatenate((mask[:index], [has_label], mask[index:]))
             self._label_masks[label] = new_mask
 
+    def introduce_arc_point(self, arc_val):
+        """
+        Introduce a new point at the given arc length.
+
+        :param arc_val: Arc length between 0 and 1 to introduce new point at.
+        :type arc_val: float
+        :returns: The index of the new point.
+        :rtype: int
+        """
+        arc = self.as_arc()
+        arc_point_floor = self.floor_arc_point(arc_val)
+        arc_point_ceil = self.ceil_arc_point(arc_val)
+        arc_floor = arc[arc_point_floor]
+        arc_ceil = arc[arc_point_ceil]
+        point_floor = self[arc_point_floor]
+        point_ceil = self[arc_point_ceil]
+        rem = (arc_val - arc_floor) / (arc_ceil - arc_floor)
+        new_point = (point_ceil - point_floor) * rem + point_floor
+        new_index = arc_point_floor + 1
+        self.introduce_point(new_index, *new_point)
+        return new_index
+
     def get_arc_point(self, arc, eps=1e-10):
         """
         Strict search for an arc point within an epsilon.

@@ -151,7 +151,7 @@ class Branch:
         """
         return not self._children
 
-    def label(self, *labels):
+    def label_all(self, *labels):
         """
         Add labels to every point on the branch. See :func:`label_points
         <.morphologies.Morphology.label_points>` to label individual points.
@@ -290,7 +290,7 @@ class Branch:
         return labels
 
 
-    def introduce_point(self, index, *args, labels=None):
+    def introduce_point(self, index, *args):
         """
         Insert a new point at ``index``, before the existing point at ``index``.
 
@@ -298,19 +298,16 @@ class Branch:
         :type index: int
         :param args: Vector coordinates of the new point
         :type args: float
-        :param labels: The labels to assign to the point.
-        :type labels: list
         """
         for v, vector_name in enumerate(type(self).vectors):
             vector = getattr(self, vector_name)
             new_vector = np.concatenate((vector[:index], [args[v]], vector[index:]))
             setattr(self, vector_name, new_vector)
-        if labels is None:
-            labels = set()
         for label, mask in self._label_masks.items():
             has_label = label in labels
-            new_mask = np.concatenate((mask[:index], [has_label], mask[index:]))
+            new_mask = np.concatenate((mask[:index], mask[index], mask[index:]))
             self._label_masks[label] = new_mask
+
 
     def introduce_arc_point(self, arc_val):
         """

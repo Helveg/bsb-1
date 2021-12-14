@@ -464,16 +464,17 @@ def plot_morphology(
         raise Exception("Please specify a color for the `soma`.")
     soma_color = color["soma"] if isinstance(color, dict) else color
     soma_comps = [c for c in compartments if "soma" in c.labels]
-    # Negative bool = -1/0 (True: -1, last soma comp, False: 0, first soma comp)
-    soma_comp = soma_comps[-use_last_soma_comp]
-    traces.append(
-        get_soma_trace(
-            soma_radius if soma_radius is not None else soma_comp.radius,
-            offset + (soma_comp.end if use_last_soma_comp else soma_comp.start),
-            soma_color,
-            opacity=soma_opacity,
+    if soma_comps:
+        # Negative bool = -1/0 (True: -1, last soma comp, False: 0, first soma comp)
+        soma_comp = soma_comps[-use_last_soma_comp]
+        traces.append(
+            get_soma_trace(
+                soma_radius if soma_radius is not None else soma_comp.radius,
+                offset + (soma_comp.end if use_last_soma_comp else soma_comp.start),
+                soma_color,
+                opacity=soma_opacity,
+            )
         )
-    )
     for trace in traces:
         fig.add_trace(trace)
     return fig
@@ -505,22 +506,31 @@ def plot_intersections(
 
 def _get_branch_width(branch, radii):
     if isinstance(radii, dict):
-        for btype in reversed(branch[-1].labels):
+        print(branch)
+        labels = set()
+        for comp in branch:
+            labels.update(comp.labels)
+        for btype in labels:
             if btype in radii:
                 return radii[btype]
         raise Exception(
-            "Plotting width not specified for branches of type " + str(branch[-1].labels)
+            "Plotting width not specified for branches of type " + str(labels)
         )
     return radii
 
 
 def _get_branch_color(branch, colors):
     if isinstance(colors, dict):
-        for btype in reversed(branch[-1].labels):
+        labels = set()
+        for comp in branch:
+            labels.update(comp.labels)
+        if not labels:
+            return "black"
+        for btype in labels:
             if btype in colors:
                 return colors[btype]
         raise Exception(
-            "Plotting color not specified for branches of type " + str(branch[-1].labels)
+            "Plotting color not specified for branches of type " + str(labels)
         )
     return colors
 

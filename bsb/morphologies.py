@@ -304,6 +304,28 @@ class Branch:
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 
+    def introduce_point(self, index, *args, labels=None):
+        """
+        Insert a new point at ``index``, before the existing point at ``index``.
+
+        :param index: Index of the new point.
+        :type index: int
+        :param args: Vector coordinates of the new point
+        :type args: float
+        :param labels: The labels to assign to the point.
+        :type labels: list
+        """
+        for v, vector_name in enumerate(type(self).vectors):
+            vector = getattr(self, vector_name)
+            new_vector = np.concatenate((vector[:index], [args[v]], vector[index:]))
+            setattr(self, vector_name, new_vector)
+        if labels is None:
+            labels = set()
+        for label, mask in self._label_masks.items():
+            has_label = label in labels
+            new_mask = np.concatenate((mask[:index], [has_label], mask[index:]))
+            self._label_masks[label] = new_mask
+
     def get_arc_point(self, arc, eps=1e-10):
         """
         Strict search for an arc point within an epsilon.

@@ -129,7 +129,7 @@ class Branch:
         """
         Return the vectors of this branch as a matrix.
         """
-        return np.column_stack(tuple(getattr(self, v) for v in self.__class__.vectors))
+        return np.column_stack(tuple(getattr(self, v) for v in type(self).vectors))
 
     @property
     def size(self):
@@ -139,7 +139,7 @@ class Branch:
         :returns: Number of points on the branch.
         :rtype: int
         """
-        return len(getattr(self, self.__class__.vectors[0]))
+        return len(getattr(self, type(self).vectors[0]))
 
     @property
     def terminal(self):
@@ -247,7 +247,7 @@ class Branch:
         """
         Iterate over the points in the branch.
         """
-        return zip(*(self.__dict__[v] for v in self.__class__.vectors))
+        return zip(*(vars(self)[v] for v in type(self).vectors))
 
     def label_walk(self):
         """

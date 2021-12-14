@@ -333,6 +333,27 @@ class Branch:
         arc_length = np.sum(arc_distances)
         return np.cumsum(np.concatenate(([0], arc_distances))) / arc_length
 
+    def floor_arc_point(self, arc):
+        """
+        Get the index of the nearest proximal arc point.
+        """
+        p = 0
+        for i, a in enumerate(self.as_arc()):
+            if a <= arc:
+                p = i
+            else:
+                break
+        return p
+
+    def ceil_arc_point(self, arc):
+        """
+        Get the index of the nearest distal arc point.
+        """
+        for i, a in enumerate(self.as_arc()):
+            if a >= arc:
+                return i
+        return len(self) - 1
+
     def __getitem__(self, slice):
         return self.as_matrix(with_radius=True)[slice]
 

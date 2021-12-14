@@ -117,8 +117,11 @@ class Branch:
         self._full_labels = []
         self._label_masks = {}
         self._parent = None
-        for v, vector in enumerate(self.__class__.vectors):
-            self.__dict__[vector] = args[v]
+        for v, vector in enumerate(type(self).vectors):
+            setattr(self, vector, args[v])
+
+    def __len__(self):
+        return len(getattr(self, type(self).vectors[0]))
 
     @property
     def points(self):

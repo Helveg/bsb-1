@@ -333,7 +333,6 @@ class MorphologyRepository(HDF5TreeHandler):
                     branch.label(label)
                 else:
                     prox_index = branch.get_arc_point(cable.prox, eps=1e-7)
-                    print(branch.as_arc())
                     print("prox arc point", prox_index)
                     if prox_index is None:
                         prox_index = branch.introduce_arc_point(cable.prox)

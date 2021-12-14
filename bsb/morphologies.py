@@ -262,12 +262,45 @@ class Branch:
         return (label_row[label_matrix[i, :]] for i in range(n))
 
     def has_label(self, label):
+        """
+        Check if this branch is branch labelled with ``label``.
+
+        .. warning:
+
+          Returns ``False`` even if all points are individually labelled with ``label``.
+          Only when the branch itself is labelled will it return ``True``.
+
+        :param label: The label to check for.
+        :type label: str
+        :rtype: boolean
+        """
         return label in self._full_labels
 
     def has_any_label(self, labels):
+        """
+        Check if this branch is branch labelled with any of ``labels``.
+
+        .. warning:
+
+          Returns ``False`` even if all points are individually labelled with ``label``.
+          Only when the branch itself is labelled will it return ``True``.
+
+        :param labels: The labels to check for.
+        :type labels: list
+        :rtype: boolean
+        """
         return any(self.has_label(l) for l in labels)
 
     def get_labelled_points(self, label):
+        """
+        Filter out all points with a certain label
+
+        :param label: The label to check for.
+        :type label: str
+        :returns: All points with the label.
+        :rtype: List[np.ndarray]
+        """
+
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 

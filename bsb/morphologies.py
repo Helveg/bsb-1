@@ -305,12 +305,30 @@ class Branch:
         return list(p for p, labels in point_label_iter if label in labels)
 
     def as_matrix(self, with_radius=False):
+        """
+        Return the branch as a (PxV) matrix. The different vectors (V) are columns and
+        each point (P) is a row.
+
+        :param with_radius: Include the radius vector. Defaults to ``False``.
+        :type with_radius: bool
+        :returns: Matrix of the branch vectors.
+        :rtype: :class:`numpy.ndarray`
+        """
         # Get all the branch vectors unless not `with_radius`, then filter out `radii`.
         vector_names = (v for v in type(self).vectors if with_radius or v != "radii")
         vectors = list(getattr(self, name) for name in vector_names)
         return np.column_stack(vectors)
 
     def as_arc(self):
+        """
+        Return the branch as a vector of arclengths in the closed interval [0, 1]. An
+        arclength is the distance each point to the start of the branch along the branch
+        axis, normalized by total branch length. A point at the start will have an
+        arclength close to 0, and a point near the end an arclength close to 1
+
+        :returns: Vector of branch points as arclengths.
+        :rtype: :class:`numpy.ndarray`
+        """
         arc_distances = np.sqrt(np.sum(np.diff(self.as_matrix(), axis=0) ** 2, axis=1))
         arc_length = np.sum(arc_distances)
         return np.cumsum(np.concatenate(([0], arc_distances))) / arc_length

@@ -509,7 +509,6 @@ def plot_intersections(
 
 def _get_branch_width(branch, radii):
     if isinstance(radii, dict):
-        print(branch)
         labels = set()
         for comp in branch:
             labels.update(comp.labels)

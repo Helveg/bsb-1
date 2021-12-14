@@ -304,6 +304,21 @@ class Branch:
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 
+    def get_arc_point(self, arc, eps=1e-10):
+        """
+        Strict search for an arc point within an epsilon.
+
+        :param arc: Arclength position to look for.
+        :type arc: float
+        :param eps: Maximum distance/tolerance to accept an arc point as a match.
+        :type eps: float
+        :returns: The matched arc point index, or ``None`` if no match is found
+        :rtype: Union[int, None]
+        """
+        arc_values = self.as_arc()
+        arc_match = (i for i, arc_p in enumerate(arc_values) if abs(arc_p - arc) < eps)
+        return next(arc_match, None)
+
     def as_matrix(self, with_radius=False):
         """
         Return the branch as a (PxV) matrix. The different vectors (V) are columns and

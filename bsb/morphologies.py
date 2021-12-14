@@ -274,6 +274,22 @@ class Branch:
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 
+    def get_point_labels(self, index):
+        """
+        Get the labels for a certain point.
+
+        :param index: Index of the point on the branch.
+        :type index: int
+        :returns: All the labels on the point
+        :rtype: List[str]
+        """
+        labels = self._full_labels.copy()
+        for label, points in self._label_masks.items():
+            if points[index]:
+                labels.append(label)
+        return labels
+
+
     def introduce_point(self, index, *args, labels=None):
         """
         Insert a new point at ``index``, before the existing point at ``index``.

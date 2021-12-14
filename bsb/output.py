@@ -330,7 +330,7 @@ class MorphologyRepository(HDF5TreeHandler):
                 cable_id = cable.branch
                 branch = branch_map[cable_id]
                 if cable.dist == 1 and cable.prox == 0:
-                    branch.label(label)
+                    branch.label_all(label)
                 else:
                     prox_index = branch.get_arc_point(cable.prox, eps=1e-7)
                     print("prox arc point", prox_index)
@@ -426,7 +426,7 @@ class MorphologyRepository(HDF5TreeHandler):
                 vectorize(section.diam3d) / 2.0,
             )
             branch._neuron_sid = section_id_map[s_name]
-            branch.label(*section_labels_map[s_name])
+            branch.label_all(*section_labels_map[s_name])
             branch_map[s_name] = branch
             if parent is not None:
                 branch_map[parent.name()].attach_child(branch)
@@ -690,7 +690,7 @@ def _branch(b_root_group):
     branch._tmp_parent = int(attrs.get("parent", -1))
     if attrs.get("neuron_section", None) is not None:
         branch._neuron_sid = attrs.get("neuron_section")
-    branch.label(*attrs.get("branch_labels", iter(())))
+    branch.label_all(*attrs.get("branch_labels", iter(())))
     for label, dataset in b_root_group["labels"].items():
         branch.label_points(label, dataset[()])
     return branch

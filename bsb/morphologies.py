@@ -304,8 +304,7 @@ class Branch:
             new_vector = np.concatenate((vector[:index], [args[v]], vector[index:]))
             setattr(self, vector_name, new_vector)
         for label, mask in self._label_masks.items():
-            has_label = label in labels
-            new_mask = np.concatenate((mask[:index], mask[index], mask[index:]))
+            new_mask = np.concatenate((mask[:index], mask[index:(index + 1)], mask[index:]))
             self._label_masks[label] = new_mask
 
 

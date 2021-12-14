@@ -19,6 +19,7 @@ requires = [
     "errr>=1.0.0",
     "rtree>=0.9.7",
     "psutil>=5.8.0",
+    "arbor>=0.5.0",
 ]
 
 setuptools.setup(

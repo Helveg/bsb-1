@@ -5,6 +5,9 @@ import bsb.output, test_setup
 from bsb.morphologies import Morphology, Branch
 from bsb.exceptions import *
 
+# TODO: Add tests for new arc functions, point introduction and `as_matrix`.
+# TODO: Add tests for new arbor first import and morpho flow.
+
 
 class TestRepositories(unittest.TestCase):
     def test_empty_repository(self):
@@ -292,7 +295,7 @@ class TestMorphologyLabels(unittest.TestCase):
     def test_full_labels(self):
         v = len(Branch.vectors)
         branch = Branch(*(np.ones(v) for i in range(v)))
-        branch.label("A", "B", "C")
+        branch.label_all("A", "B", "C")
         self.assertEqual(["A", "B", "C"], branch._full_labels)
         self.assertEqual(["A", "B", "C"], list(next(branch.label_walk())))
         self.assertTrue(all(["A", "B", "C"] == list(l) for l in branch.label_walk()))
@@ -310,7 +313,7 @@ class TestMorphologyLabels(unittest.TestCase):
         v = len(Branch.vectors)
         branch = Branch(*(np.ones(v) for i in range(v)))
         branch.label_points("A", [False, True] + [False] * (v - 2))
-        branch.label("B")
+        branch.label_all("B")
         self.assertEqual(["B"], branch._full_labels)
         self.assertEqual(
             [["B"], ["B", "A"]] + [["B"]] * (v - 2), list(map(list, branch.label_walk()))
@@ -320,7 +323,7 @@ class TestMorphologyLabels(unittest.TestCase):
         v = len(Branch.vectors)
         branch = Branch(*(np.ones(v) for i in range(v)))
         branch.label_points("A", [False, True] + [False] * (v - 2))
-        branch.label("B")
+        branch.label_all("B")
         m = Morphology([branch])
         mr = bsb.output.MorphologyRepository("tmp.h5")
         mr.get_handle("w")
@@ -344,7 +347,7 @@ class TestLegacy(unittest.TestCase):
         branches = [root]
         for _ in range(20):
             branch = Branch(*(np.ones(v) for i in range(v)))
-            branch.label(random.choice(["A", "B", "C"]))
+            branch.label_all(random.choice(["A", "B", "C"]))
             random.choice(branches).attach_child(branch)
             branches.append(branch)
         m = Morphology([root])

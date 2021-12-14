@@ -151,7 +151,7 @@ class Branch:
         """
         return not self._children
 
-    def label(self, *labels):
+    def label_all(self, *labels):
         """
         Add labels to every point on the branch. See :func:`label_points
         <.morphologies.Morphology.label_points>` to label individual points.
@@ -261,36 +261,6 @@ class Branch:
         label_matrix = np.column_stack((shared, *self._label_masks.values()))
         return (label_row[label_matrix[i, :]] for i in range(n))
 
-    def has_label(self, label):
-        """
-        Check if this branch is branch labelled with ``label``.
-
-        .. warning:
-
-          Returns ``False`` even if all points are individually labelled with ``label``.
-          Only when the branch itself is labelled will it return ``True``.
-
-        :param label: The label to check for.
-        :type label: str
-        :rtype: boolean
-        """
-        return label in self._full_labels
-
-    def has_any_label(self, labels):
-        """
-        Check if this branch is branch labelled with any of ``labels``.
-
-        .. warning:
-
-          Returns ``False`` even if all points are individually labelled with ``label``.
-          Only when the branch itself is labelled will it return ``True``.
-
-        :param labels: The labels to check for.
-        :type labels: list
-        :rtype: boolean
-        """
-        return any(self.has_label(l) for l in labels)
-
     def get_labelled_points(self, label):
         """
         Filter out all points with a certain label
@@ -304,7 +274,23 @@ class Branch:
         point_label_iter = zip(self.walk(), self.label_walk())
         return list(p for p, labels in point_label_iter if label in labels)
 
-    def introduce_point(self, index, *args, labels=None):
+    def get_point_labels(self, index):
+        """
+        Get the labels for a certain point.
+
+        :param index: Index of the point on the branch.
+        :type index: int
+        :returns: All the labels on the point
+        :rtype: List[str]
+        """
+        labels = self._full_labels.copy()
+        for label, points in self._label_masks.items():
+            if points[index]:
+                labels.append(label)
+        return labels
+
+
+    def introduce_point(self, index, *args):
         """
         Insert a new point at ``index``, before the existing point at ``index``.
 
@@ -312,19 +298,15 @@ class Branch:
         :type index: int
         :param args: Vector coordinates of the new point
         :type args: float
-        :param labels: The labels to assign to the point.
-        :type labels: list
         """
         for v, vector_name in enumerate(type(self).vectors):
             vector = getattr(self, vector_name)
             new_vector = np.concatenate((vector[:index], [args[v]], vector[index:]))
             setattr(self, vector_name, new_vector)
-        if labels is None:
-            labels = set()
         for label, mask in self._label_masks.items():
-            has_label = label in labels
-            new_mask = np.concatenate((mask[:index], [has_label], mask[index:]))
+            new_mask = np.concatenate((mask[:index], mask[index:(index + 1)], mask[index:]))
             self._label_masks[label] = new_mask
+
 
     def introduce_arc_point(self, arc_val):
         """

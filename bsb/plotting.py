@@ -449,31 +449,35 @@ def plot_morphology(
     segment_radius=1.0,
     use_last_soma_comp=True,
 ):
+    # Invalidate morphology comp cache
+    morphology._compartments = None
     compartments = np.array(morphology.compartments.copy())
     dfs_list = all_depth_first_branches(morphology.get_compartment_network())
     if reduce_branches:
         branch_points = get_branch_points(dfs_list)
         dfs_list = list(map(lambda b: reduce_branch(b, branch_points), dfs_list))
     traces = []
+    autocolors = {}
     for branch in dfs_list[::-1]:
         branch_comps = compartments[branch]
         width = _get_branch_width(branch_comps, segment_radius)
-        _color = _get_branch_color(branch_comps, color)
+        _color = _get_branch_color(branch_comps, color, auto=autocolors)
         traces.append(get_branch_trace(branch_comps, offset, color=_color, width=width))
     if isinstance(color, dict) and "soma" not in color:
         raise Exception("Please specify a color for the `soma`.")
     soma_color = color["soma"] if isinstance(color, dict) else color
     soma_comps = [c for c in compartments if "soma" in c.labels]
-    # Negative bool = -1/0 (True: -1, last soma comp, False: 0, first soma comp)
-    soma_comp = soma_comps[-use_last_soma_comp]
-    traces.append(
-        get_soma_trace(
-            soma_radius if soma_radius is not None else soma_comp.radius,
-            offset + (soma_comp.end if use_last_soma_comp else soma_comp.start),
-            soma_color,
-            opacity=soma_opacity,
+    if soma_comps:
+        # Negative bool = -1/0 (True: -1, last soma comp, False: 0, first soma comp)
+        soma_comp = soma_comps[-use_last_soma_comp]
+        traces.append(
+            get_soma_trace(
+                soma_radius if soma_radius is not None else soma_comp.radius,
+                offset + (soma_comp.end if use_last_soma_comp else soma_comp.start),
+                soma_color,
+                opacity=soma_opacity,
+            )
         )
-    )
     for trace in traces:
         fig.add_trace(trace)
     return fig
@@ -505,22 +509,35 @@ def plot_intersections(
 
 def _get_branch_width(branch, radii):
     if isinstance(radii, dict):
-        for btype in reversed(branch[-1].labels):
+        labels = set()
+        for comp in branch:
+            labels.update(comp.labels)
+        for btype in labels:
             if btype in radii:
                 return radii[btype]
         raise Exception(
-            "Plotting width not specified for branches of type " + str(branch[-1].labels)
+            "Plotting width not specified for branches of type " + str(labels)
         )
     return radii
 
 
-def _get_branch_color(branch, colors):
+def _get_branch_color(branch, colors, auto=None):
+    from colour import Color
+
+    auto_color = "auto" in colors and colors["auto"] is True
     if isinstance(colors, dict):
-        for btype in reversed(branch[-1].labels):
+        labels = set()
+        for comp in branch:
+            labels.update(comp.labels)
+        if not labels:
+            return "black"
+        if auto_color:
+            return auto.setdefault(";".join(sorted(labels)), Color(pick_for=random.random()).hex)
+        for btype in labels:
             if btype in colors:
                 return colors[btype]
         raise Exception(
-            "Plotting color not specified for branches of type " + str(branch[-1].labels)
+            "Plotting color not specified for branches of type " + str(labels)
         )
     return colors
 

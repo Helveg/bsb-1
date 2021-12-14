@@ -271,14 +271,13 @@ class MorphologyRepository(HDF5TreeHandler):
         """
         return self.import_arb(*arbor.load_asc(file), name, overwrite=overwrite)
 
+    def import_arb(self, morphology, labels, name, overwrite=False):
         decor = arbor.decor()
-        cc = arbor.cable_cell(morphology, labels, decor)
         morpho_roots = set(
             i
             for i in range(morphology.num_branches)
             if morphology.branch_parent(i) == 4294967295
         )
-        print("roots in arbor m", morpho_roots)
         parent = None
         roots = []
         stack = []
@@ -309,10 +308,34 @@ class MorphologyRepository(HDF5TreeHandler):
                 parent = None
                 cable_id = morpho_roots.pop()
         morpho = Morphology(roots)
-        for i, branch in enumerate(morpho.branches):
-            assert branch._cable_id == i
+        branches = morpho.branches
+        branch_map = {branch._cable_id: branch for branch in branches}
+        cc = arbor.cable_cell(morphology, labels, decor)
+        for label in labels:
+            if "excl:" in label or label == "all":
+                continue
+            label_cables = cc.cables(f'"{label}"')
+            for cable in label_cables:
+                cable_id = cable.branch
+                branch = branch_map[cable_id]
+                if cable.dist == 1 and cable.prox == 0:
+                    branch.label(label)
+                else:
+                    prox_index = branch.get_arc_point(cable.prox, eps=1e-7)
+                    if prox_index is None:
+                        prox_index = branch.introduce_arc_point(cable.prox)
+                    dist_index = branch.get_arc_point(cable.dist, eps=1e-7)
+                    if dist_index is None:
+                        dist_index = branch.introduce_arc_point(cable.dist)
+                    mask = np.array(
+                        [False] * prox_index
+                        + [True] * (dist_index - prox_index + 1)
+                        + [False] * (len(branch) - dist_index - 1)
+                    )
+                    branch.label_points(label, mask)
 
         self.save_morphology(name, morpho, overwrite=overwrite)
+        return morpho
 
     def import_arbz(self, name, cls, overwrite=False):
         """

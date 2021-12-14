@@ -258,18 +258,17 @@ class MorphologyRepository(HDF5TreeHandler):
         if "morphologies" not in handle:
             handle.create_group("morphologies")
 
-    def import_swc(self, file, name, tags=[], overwrite=False):
+    def import_swc(self, file, name, overwrite=False):
         """
         Import and store .swc file contents as a morphology in the repository.
         """
-        raise NotImplementedError(
-            "SWC temporarily unsupported. Use the `arbor` library to parse SWC, then pass the result to `.import_arbor`."
-        )
-        # Read as CSV
-        swc_data = np.loadtxt(file)
+        return self.import_arb(*arbor.load_swc_arbor(file), name, overwrite=overwrite)
 
-    def import_arbor(self, morphology, labels, name, overwrite=False):
-        import arbor
+    def import_asc(self, file, name, overwrite=False):
+        """
+        Import and store .asc file contents as a morphology in the repository.
+        """
+        return self.import_arb(*arbor.load_asc(file), name, overwrite=overwrite)
 
         decor = arbor.decor()
         cc = arbor.cable_cell(morphology, labels, decor)

@@ -28,8 +28,11 @@ class ConnectomeGlomerulusGranule(ConnectionStrategy):
             morphology = mr.get_morphology(morphologies[0])
             dendritic_compartments = morphology.get_compartments(["dendrites"])
             dendrites = {}
-            for c in dendritic_compartments:
-                # Store the last found compartment of each dendrite
+            for i, c in enumerate(dendritic_compartments):
+                # Bad hack: for human reconstruction we temporarily added that
+                # every 2 comps should form a section. If you see this,
+                # call Claudia ;)
+                c.section_id = i // 2
                 dendrites[c.section_id] = c
             self.dendritic_claws = [c.id for c in dendrites.values()]
             self.morphology = morphology
@@ -45,6 +48,8 @@ class ConnectomeGlomerulusGranule(ConnectionStrategy):
         first_glomerulus = int(glomeruli[0, 0])
         mf_to_glom = self.scaffold.cell_connections_by_tag["mossy_to_glomerulus"]
         glom_mf_map = {v: k for k, v in mf_to_glom}
+        done_ids = set()
+        counts = {}
 
         def connectome_glom_grc(
             first_glomerulus, glomeruli, granules, dend_len, n_conn_glom
@@ -89,12 +94,17 @@ class ConnectomeGlomerulusGranule(ConnectionStrategy):
                     connected_gloms = good_gloms
                     connected_glom_len = good_gloms_len
                 # Connect the selected glomeruli to the current gran_id
+                print("candidate cap", connected_glom_len)
                 for i in range(connected_glom_len):
                     # Add the first_glomerulus id to convert their local id to their real simulation id
                     results[next_index + i] = [
                         connected_gloms[i] + first_glomerulus,
                         gran_id,
                     ]
+                if gran_id in done_ids:
+                    raise Exception(f"Somehow duplicate {gran_id}")
+                else:
+                    done_ids.add(gran_id)
                 # Move up the internal array pointer
                 next_index += connected_glom_len
             # Truncate the pre-allocated array to the internal array pointer.
@@ -121,6 +131,9 @@ class ConnectomeGlomerulusGranule(ConnectionStrategy):
             t = time()
             for i in range(len(connectome)):
                 granule_id = connectome[i, 1]
+                c = counts.setdefault(granule_id, 0)
+                counts[granule_id] = c + 1
+                print("Fetching claw", c + 1, "of", granule_id, "conn line", i)
                 try:
                     unoccupied_claw = granule_dendrite_occupation[granule_id].pop()
                 except IndexError:

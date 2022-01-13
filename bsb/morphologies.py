@@ -594,9 +594,10 @@ class Morphology:
         """
         R = get_rotation_matrix(v0, v)
         for b in self.branches:
+            points = b.as_matrix(with_radius=False)
             print(b.x.shape)
-            print(b.points)
-            rotated_points = R.dot(b.points)
+            print(points)
+            rotated_points = R.dot(points.T)
             b.x, b.y, b.z = rotated_points
             print("rot", rotated_points)
             print(b.x, b.y, b.z)

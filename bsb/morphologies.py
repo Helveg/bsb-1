@@ -593,12 +593,14 @@ class Morphology:
 
         """
         R = get_rotation_matrix(v0, v)
-
-        for c in range(len(self.compartments)):
-            self.compartments[c].start = R.dot(self.compartments[c].start)
-            self.compartments[c].end = R.dot(self.compartments[c].end)
-
-        self.update_compartment_tree()
+        for b in self.branches:
+            print(b.x.shape)
+            print(b.points)
+            rotated_points = R.dot(b.points)
+            b.x, b.y, b.z = rotated_points
+            print("rot", rotated_points)
+            print(b.x, b.y, b.z)
+            print(b.x.shape)
 
 
 def _compartment_tree(compartments):

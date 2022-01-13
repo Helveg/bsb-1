@@ -270,13 +270,16 @@ class MorphologyRepository(HDF5TreeHandler):
         """
         return self.import_arb(*arbor.load_asc(file), name, overwrite=overwrite)
 
-    def import_arb(self, morphology, labels, name, overwrite=False):
+    def import_arb(self, morphology, labels, name, overwrite=False, centering=True):
         decor = arbor.decor()
         morpho_roots = set(
             i
             for i in range(morphology.num_branches)
             if morphology.branch_parent(i) == 4294967295
         )
+        root_prox = [r.prox for r in map(morphology.branch_segments, morpho_roots)]
+        center = np.mean([[p.x, p.y, p.z] for r in root_prox], axis=1)
+        print("Centering morphology on", centering)
         parent = None
         roots = []
         stack = []
@@ -288,10 +291,17 @@ class MorphologyRepository(HDF5TreeHandler):
             if not segments:
                 branch = Branch([], [], [], [])
             else:
-                x = [segments[0].prox.x] + [s.dist.x for s in segments]
-                y = [segments[0].prox.y] + [s.dist.y for s in segments]
-                z = [segments[0].prox.z] + [s.dist.z for s in segments]
-                r = [segments[0].prox.radius] + [s.dist.radius for s in segments]
+                # Prepend the proximal end of the first segment to get [p0, p1, ..., pN]
+                x = np.array([segments[0].prox.x] + [s.dist.x for s in segments])
+                y = np.array([segments[0].prox.y] + [s.dist.y for s in segments])
+                z = np.array([segments[0].prox.z] + [s.dist.z for s in segments])
+                r = np.array(
+                    [segments[0].prox.radius] + [s.dist.radius for s in segments]
+                )
+                if centering:
+                    x -= center[0]
+                    y -= center[1]
+                    z -= center[2]
                 branch = Branch(x, y, z, r)
             branch._cable_id = cable_id
             if parent:

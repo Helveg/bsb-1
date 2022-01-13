@@ -289,7 +289,6 @@ class Branch:
                 labels.append(label)
         return labels
 
-
     def introduce_point(self, index, *args):
         """
         Insert a new point at ``index``, before the existing point at ``index``.
@@ -304,9 +303,10 @@ class Branch:
             new_vector = np.concatenate((vector[:index], [args[v]], vector[index:]))
             setattr(self, vector_name, new_vector)
         for label, mask in self._label_masks.items():
-            new_mask = np.concatenate((mask[:index], mask[index:(index + 1)], mask[index:]))
+            new_mask = np.concatenate(
+                (mask[:index], mask[index : (index + 1)], mask[index:])
+            )
             self._label_masks[label] = new_mask
-
 
     def introduce_arc_point(self, arc_val):
         """

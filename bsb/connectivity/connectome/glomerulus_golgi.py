@@ -27,7 +27,9 @@ class ConnectomeGlomerulusGolgi(ConnectionStrategy):
                 )
             mr = self.scaffold.morphology_repository
             morphology = mr.get_morphology(morphologies[0])
-            self.dendritic_compartments = morphology.get_compartments(self.to_cell_compartments[0])
+            self.dendritic_compartments = morphology.get_compartments(
+                self.to_cell_compartments[0]
+            )
             self.morphology = morphology
 
     def connect(self):

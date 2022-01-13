@@ -532,7 +532,9 @@ def _get_branch_color(branch, colors, auto=None):
         if not labels:
             return "black"
         if auto_color:
-            return auto.setdefault(";".join(sorted(labels)), Color(pick_for=random.random()).hex)
+            return auto.setdefault(
+                ";".join(sorted(labels)), Color(pick_for=random.random()).hex
+            )
         for btype in labels:
             if btype in colors:
                 return colors[btype]

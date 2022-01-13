@@ -277,7 +277,7 @@ class MorphologyRepository(HDF5TreeHandler):
             for i in range(morphology.num_branches)
             if morphology.branch_parent(i) == 4294967295
         )
-        root_prox = [r.prox for r in map(morphology.branch_segments, morpho_roots)]
+        root_prox = [r[0].prox for r in map(morphology.branch_segments, morpho_roots)]
         center = np.mean([[p.x, p.y, p.z] for r in root_prox], axis=1)
         print("Centering morphology on", centering)
         parent = None

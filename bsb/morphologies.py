@@ -330,6 +330,16 @@ class Branch:
         self.introduce_point(new_index, *new_point)
         return new_index
 
+    def get_point(self, index):
+        """
+        Return the `index`-th point on the branch
+
+        :param index: Index to fetch from the individual branch vectors.
+        :type index: slice
+        """
+        me = vars(self)
+        return np.array(tuple(me[v][index] for v in Branch.vectors))
+
     def get_arc_point(self, arc, eps=1e-10):
         """
         Strict search for an arc point within an epsilon.
@@ -419,27 +429,9 @@ def _pairwise_iter(walk_iter, labels_iter):
         start = end
 
 
-class Morphology:
-    """
-    A multicompartmental spatial representation of a cell based on connected 3D
-    compartments.
-
-    :todo: Uncouple from the MorphologyRepository and merge with TrueMorphology.
-    """
-
-    def __init__(self, roots):
-        self.cloud = None
-        self.has_morphology = True
-        self.has_voxels = False
-        self.roots = roots
-        self._compartments = None
-        self.update_compartment_tree()
-
-    @property
-    def compartments(self):
-        if self._compartments is None:
-            self._compartments = self.to_compartments()
-        return self._compartments
+class BranchGroup:
+    def __init__(self, branches):
+        self.roots = [b for b in branches if b.parent is None]
 
     @property
     def branches(self):
@@ -447,6 +439,9 @@ class Morphology:
         Return a depth-first flattened array of all branches.
         """
         return self.get_branches()
+
+    def select_group(self, labels=None):
+        return BranchGroup(self.get_branches(labels))
 
     def get_branches(self, labels=None):
         """
@@ -464,25 +459,6 @@ class Morphology:
             return list(all_branch)
         else:
             return [b for b in all_branch if any(b.fully_labelled_as(l) for l in labels)]
-
-    def to_compartments(self):
-        """
-        Return a flattened array of compartments
-        """
-        comp_counter = 0
-
-        def treat_branch(branch, last_parent=None):
-            nonlocal comp_counter
-            comps = branch.to_compartments(comp_counter, last_parent)
-            comp_counter += len(comps)
-            # If this branch has no compartments just pass on the compartment we were
-            # supposed to connect our first compartment to. That way this empty branch
-            # is skipped and the next compartments are still connected in the comp tree.
-            parent_comp = comps[-1] if len(comps) else last_parent
-            child_iters = (treat_branch(b, parent_comp) for b in branch._children)
-            return itertools.chain(comps, *child_iters)
-
-        return [*itertools.chain(*(treat_branch(root) for root in self.roots))]
 
     def flatten(self, vectors=None, matrix=False, labels=None):
         """
@@ -504,6 +480,86 @@ class Morphology:
             return tuple(np.empty(0) for _ in vectors)
         t = tuple(np.concatenate(tuple(getattr(b, v) for b in branches)) for v in vectors)
         return np.column_stack(t) if matrix else t
+
+    def rotate(self, v0, v):
+        """
+        Rotate a morphology to be oriented as vector v, supposing to start from orientation v0.
+        norm(v) = norm(v0) = 1
+        Rotation matrix R, representing a rotation of angle alpha around vector k
+        """
+        R = get_rotation_matrix(v0, v)
+        for b in self.branches:
+            points = b.as_matrix(with_radius=False)
+            rotated_points = R.dot(points.T)
+            b.x, b.y, b.z = rotated_points
+
+    def rotate_roots(self, v0, v):
+        """
+        Rotate the subtree emanating from each root around the start of the root
+        """
+        for b in self.roots:
+            group = BranchGroup([b])
+            group.rotate(v0, v)
+            group.center()
+
+    def translate(self, point):
+        for p, vector in zip(point, Branch.vectors):
+            for branch in self.branches:
+                array = getattr(branch, vector)
+                array += p
+
+    def center(self):
+        origin = np.mean([r.get_point(0) for r in self.roots], axis=1)
+        self.translate(-origin)
+
+    def close_gaps(self):
+        for branch in self.branches:
+            if branch.parent is not None:
+                gap_offset = branch.parent.get_point(-1) - branch.get_point(0)
+                if not np.allclose(gap_offset, 0):
+                    BranchGroup([branch]).translate(gap_offset)
+
+
+class Morphology(BranchGroup):
+    """
+    A multicompartmental spatial representation of a cell based on connected 3D
+    compartments.
+
+    :todo: Uncouple from the MorphologyRepository and merge with TrueMorphology.
+    """
+
+    def __init__(self, branches):
+        super().__init__(branches)
+        self.cloud = None
+        self.has_morphology = True
+        self.has_voxels = False
+        self._compartments = None
+        self.update_compartment_tree()
+
+    @property
+    def compartments(self):
+        if self._compartments is None:
+            self._compartments = self.to_compartments()
+        return self._compartments
+
+    def to_compartments(self):
+        """
+        Return a flattened array of compartments
+        """
+        comp_counter = 0
+
+        def treat_branch(branch, last_parent=None):
+            nonlocal comp_counter
+            comps = branch.to_compartments(comp_counter, last_parent)
+            comp_counter += len(comps)
+            # If this branch has no compartments just pass on the compartment we were
+            # supposed to connect our first compartment to. That way this empty branch
+            # is skipped and the next compartments are still connected in the comp tree.
+            parent_comp = comps[-1] if len(comps) else last_parent
+            child_iters = (treat_branch(b, parent_comp) for b in branch._children)
+            return itertools.chain(comps, *child_iters)
+
+        return [*itertools.chain(*(treat_branch(root) for root in self.roots))]
 
     def update_compartment_tree(self):
         # Eh, this code will be refactored soon, if you're still seeing this in v4 open an
@@ -588,25 +644,6 @@ class Morphology:
         if labels is None:
             return self.compartments.copy()
         return [c for c in self.compartments if any(l in labels for l in c.labels)]
-
-    def rotate(self, v0, v):
-        """
-
-        Rotate a morphology to be oriented as vector v, supposing to start from orientation v0.
-        norm(v) = norm(v0) = 1
-        Rotation matrix R, representing a rotation of angle alpha around vector k
-
-        """
-        R = get_rotation_matrix(v0, v)
-        for b in self.branches:
-            points = b.as_matrix(with_radius=False)
-            print(b.x.shape)
-            print(points)
-            rotated_points = R.dot(points.T)
-            b.x, b.y, b.z = rotated_points
-            print("rot", rotated_points)
-            print(b.x, b.y, b.z)
-            print(b.x.shape)
 
 
 def _compartment_tree(compartments):

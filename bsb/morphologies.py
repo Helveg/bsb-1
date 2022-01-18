@@ -395,6 +395,11 @@ class Branch:
                 return i
         return len(self) - 1
 
+    def fully_labelled_as(self, label):
+        return label in self._full_labels or (
+            label in self._label_masks and np.all(self._label_masks[label])
+        )
+
     def __getitem__(self, slice):
         return self.as_matrix(with_radius=True)[slice]
 
@@ -449,16 +454,16 @@ class Morphology:
 
         :param labels: Names of the labels to select.
         :type labels: list
-        :returns: List of all branches or all branches with any of the labels
-          when given
+        :returns: List of all branches, or the ones fully labelled with any of
+          the given labels.
         :rtype: list
         """
         root_iter = (branch_iter(root) for root in self.roots)
-        all_branch_iter = itertools.chain(*root_iter)
+        all_branch = itertools.chain(*root_iter)
         if labels is None:
-            return list(all_branch_iter)
+            return list(all_branch)
         else:
-            return [b for b in all_branch_iter if b.has_any_label(labels)]
+            return [b for b in all_branch if any(b.fully_labelled_as(l) for l in labels)]
 
     def to_compartments(self):
         """

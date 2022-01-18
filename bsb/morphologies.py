@@ -440,7 +440,7 @@ class BranchGroup:
         """
         return self.get_branches()
 
-    def select_group(self, labels=None):
+    def select_branches(self, labels=None):
         return BranchGroup(self.get_branches(labels))
 
     def get_branches(self, labels=None):

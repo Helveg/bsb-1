@@ -5,6 +5,7 @@ from sklearn.neighbors import KDTree
 from .exceptions import *
 from .reporting import report
 import operator
+from itertools import chain
 
 
 class Compartment:
@@ -429,9 +430,25 @@ def _pairwise_iter(walk_iter, labels_iter):
         start = end
 
 
-class BranchGroup:
-    def __init__(self, branches):
-        self.roots = [b for b in branches if b.parent is None]
+class SubTree:
+    def __init__(self, branches, sanitize=True):
+        if sanitize:
+            # Find the roots of the full subtree(s) emanating from the given, possibly
+            # overlapping branches.
+            if len(branches) < 2:
+                # The roots of the subtrees of 0 or 1 branches is eaqual to the 0 or 1
+                # branches.
+                self.roots = branches
+            else:
+                # Collect the deduplicated subtree emanating from all given branches
+                sub = set(chain.from_iterable(b.get_branches() for b in branches))
+                # Find the root branches whose parents are not part of the subtrees
+                self.roots = [b for b in sub if b.parent not in sub]
+        else:
+            # No subtree sanitizing: Assume the whole tree is given, or only the roots
+            # have been given, and just take all literal root (non-parent-having)
+            # branches.
+            self.roots = [b for b in branches if b.parent is None]
 
     @property
     def branches(self):
@@ -441,7 +458,7 @@ class BranchGroup:
         return self.get_branches()
 
     def select_branches(self, labels=None):
-        return BranchGroup(self.get_branches(labels))
+        return SubTree(self.get_branches(labels))
 
     def get_branches(self, labels=None):
         """
@@ -498,7 +515,7 @@ class BranchGroup:
         Rotate the subtree emanating from each root around the start of the root
         """
         for b in self.roots:
-            group = BranchGroup([b])
+            group = SubTree([b])
             group.rotate(v0, v)
             group.center()
 
@@ -517,19 +534,19 @@ class BranchGroup:
             if branch.parent is not None:
                 gap_offset = branch.parent.get_point(-1) - branch.get_point(0)
                 if not np.allclose(gap_offset, 0):
-                    BranchGroup([branch]).translate(gap_offset)
+                    SubTree([branch]).translate(gap_offset)
 
 
-class Morphology(BranchGroup):
+class Morphology(SubTree):
     """
-    A multicompartmental spatial representation of a cell based on connected 3D
-    compartments.
-
-    :todo: Uncouple from the MorphologyRepository and merge with TrueMorphology.
+    A multicompartmental spatial representation of a cell based on directed acyclic
+    branches.
     """
 
-    def __init__(self, branches):
-        super().__init__(branches)
+    def __init__(self, roots):
+        super().__init__(roots, sanitize=False)
+        if len(self.roots) < len(roots):
+            warn("None root branches given as morphology input.", MorphologyWarning)
         self.cloud = None
         self.has_morphology = True
         self.has_voxels = False

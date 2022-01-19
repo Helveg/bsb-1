@@ -4588,18 +4588,18 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
 
 .rst-content img {
   max-width: 100%;
-  height: auto !important; }
+}
 
-.rst-content div.figure {
-  margin-bottom: 24px; }
+.rst-content figure {
+  margin-bottom: 24px !important; }
 
-.rst-content div.figure p.caption {
+.rst-content figure p.caption {
   font-style: italic; }
 
-.rst-content div.figure.align-center {
+.rst-content figure.align-center {
   text-align: center; }
 
-.rst-content .section > img, .rst-content .section > a > img {
+.rst-content section > img, .rst-content section > a > img {
   margin-bottom: 24px; }
 
 .rst-content blockquote {

@@ -457,7 +457,9 @@ class SubTree:
         """
         return self.get_branches()
 
-    def select_branches(self, labels=None):
+    def select(self, *labels):
+        if not labels:
+            labels = None
         return SubTree(self.get_branches(labels))
 
     def get_branches(self, labels=None):
@@ -498,7 +500,7 @@ class SubTree:
         t = tuple(np.concatenate(tuple(getattr(b, v) for b in branches)) for v in vectors)
         return np.column_stack(t) if matrix else t
 
-    def rotate(self, v0, v):
+    def rotate(self, v0, v, origin=None):
         """
         Rotate a morphology to be oriented as vector v, supposing to start from orientation v0.
         norm(v) = norm(v0) = 1
@@ -507,17 +509,23 @@ class SubTree:
         R = get_rotation_matrix(v0, v)
         for b in self.branches:
             points = b.as_matrix(with_radius=False)
+            if center is not None:
+                points -= center
             rotated_points = R.dot(points.T)
+            if origin is not None:
+                rotated_points = (rotated_points.T + origin).T
             b.x, b.y, b.z = rotated_points
 
-    def rotate_roots(self, v0, v):
+    def root_rotate(self, v0, v):
         """
         Rotate the subtree emanating from each root around the start of the root
         """
         for b in self.roots:
             group = SubTree([b])
+            p = group.origin
+            group.translate(-p)
             group.rotate(v0, v)
-            group.center()
+            group.translate(p)
 
     def translate(self, point):
         for p, vector in zip(point, Branch.vectors):
@@ -525,9 +533,12 @@ class SubTree:
                 array = getattr(branch, vector)
                 array += p
 
+    @property
+    def origin(self):
+        return np.mean([r.get_point(0) for r in self.roots], axis=1)
+
     def center(self):
-        origin = np.mean([r.get_point(0) for r in self.roots], axis=1)
-        self.translate(-origin)
+        self.translate(-self.origin)
 
     def close_gaps(self):
         for branch in self.branches:

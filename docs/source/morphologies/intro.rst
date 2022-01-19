@@ -44,8 +44,9 @@ point of the child branch. Compartments are individuals so branches are no longe
 describe the network of points, instead each compartment lists their own parent
 compartment.
 
-Using morphologies
-------------------
+====================
+Reading morphologies
+====================
 
 For this introduction we're going to assume that you have a ``MorphologyRepository`` with
 morphologies already present in them. To learn how to create your own morphologies stored
@@ -106,3 +107,127 @@ data of the whole morphology in a object you can do this by flattening the morph
   print("All the points on those branches in depth first order:")
   print("- As vectors:", morfo.flatten())
   print("- As matrix:", morfo.flatten(matrix=True).shape)
+
+=======================
+Subtree transformations
+=======================
+
+A subtree is a (sub)set of a morphology defined by a set of *roots* and all of its
+downstream branches (i.e. the branches *emanating* from a set of roots). A subtree with
+roots equal to the roots of the morphology is equal to the entire morphology, and all
+transformations valid on a subtree are also valid morphology transformations.
+
+Selection
+=========
+
+Subtrees can be selected using label(s) on the morphology.
+
+.. figure:: /images/m_trans/tuft_select.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  axon = morfo.select("axon")
+  # Multiple labels can be given
+  hybrid = morfo.select("proximal", "distal")
+
+.. warning::
+
+	Only branches that have all of their points labelled with a label will be selected.
+
+Selection will always select all emanating branches as well:
+
+.. figure:: /images/m_trans/emanating.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  tuft = morfo.select("dendritic_piece")
+
+Translation
+===========
+
+.. code-block:: python
+
+  axon.translate([24, 100, 0])
+
+Centering
+=========
+
+Subtrees may center themselves by offsetting the geometric mean of the origins of each
+root.
+
+Rotation
+========
+
+Subtrees may be rotated around a singular point (by default around 0), by given 2
+orientation vectors:
+
+.. figure:: /images/m_trans/rotate_tree.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  dendrites.rotate([0, 1, 0], [1, 0, 0])
+
+.. figure:: /images/m_trans/rotate_dend.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  dendrite.rotate([0, 1, 0], [1, 0, 0])
+
+
+Root-rotation
+=============
+
+Subtrees may rotate each subtree around their respective roots:
+
+.. figure:: /images/m_trans/root_rotate_dend.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  dendrite.root_rotate([0, 1, 0], [1, 0, 0])
+
+.. figure:: /images/m_trans/root_rotate_tree.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  dendrites.root_rotate([0, 1, 0], [1, 0, 0])
+
+Gap closing
+===========
+
+Subtree gaps between parent and child branches can be closed:
+
+.. figure:: /images/m_trans/close_gaps.png
+  :figwidth: 350px
+  :align: center
+
+.. code-block:: python
+
+  dendrites.close_gaps()
+
+.. note::
+
+	The gaps between any subtree branch and its parent will be closed, even if the parent is
+	not part of the subtree. This means that gaps of roots of a subtree may be closed as
+	well.
+
+.. note::
+
+	Gaps between roots are not collapsed.
+
+Collapsing
+==========
+
+TODO, doesn't exist yet. Bring all roots of a subtree together, either collapsing on 0, or
+on one of the roots.

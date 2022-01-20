@@ -229,5 +229,4 @@ Subtree gaps between parent and child branches can be closed:
 Collapsing
 ==========
 
-TODO, doesn't exist yet. Bring all roots of a subtree together, either collapsing on 0, or
-on one of the roots.
+Collapse the roots of a subtree onto a single point, by default the origin.

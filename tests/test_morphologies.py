@@ -9,6 +9,11 @@ from bsb.exceptions import *
 # TODO: Add tests for new arbor first import and morpho flow.
 
 
+class FloatComp:
+    def assertClose(self, a, b, msg):
+        self.assertTrue(np.allclose(a, b), msg)
+
+
 class TestRepositories(unittest.TestCase):
     def test_empty_repository(self):
         pass
@@ -367,3 +372,57 @@ class TestLegacy(unittest.TestCase):
         m.get_compartments(labels=["A"])
         m.get_branches()
         m.get_branches(labels=["B"])
+
+
+class TestTransformations(unittest.TestCase, FloatComp):
+    def _y_parts(self):
+        return [
+            Branch([0, 0, 0], [0, 0, 0], [5, 6, 7], [1, 1, 1]),
+            Branch([0, 0, 0], [0, 1, 2], [7, 7, 7], [1, 1, 1]),
+            Branch([0, 0, 0], [0, -1, -2], [7, 7, 7], [1, 1, 1]),
+        ]
+
+    def _z_parts(self):
+        return [
+            Branch([-3, -2, -1], [-2, -2, -2], [0, 0, 0], [1, 1, 1]),
+            Branch([-1, -2, -3], [-2, -1, 0], [0, 0, 0], [1, 1, 1]),
+            Branch([-3, -2, -1], [0, 0, 0], [0, 0, 0], [1, 1, 1]),
+        ]
+
+    def setUp(self):
+        Y_root, Y_up, Y_down = self._y_parts()
+        Y_root.attach_child(Y_up)
+        Y_root.attach_child(Y_down)
+        self.my = Morphology([Y_root])
+
+        Y_root_gap, Y_up_gap, Y_down_gap = self._y_parts()
+        Y_root_gap.attach_child(Y_up_gap)
+        Y_root_gap.attach_child(Y_down_gap)
+        self.my_gap = Morphology([Y_root_gap])
+
+        z_top, z_mid, z_bot = self._z_parts()
+        z_top.attach_child(z_mid)
+        z_mid.attach_child(z_bot)
+        self.mz = Morphology([z_top])
+
+    def test_translate(self):
+        with self.assertRaises(ValueError):
+            self.my.translate([1])
+        self.my.translate([1, 0, 0])
+        self.assertClose(self.my.roots[0].x, 1, "X translate failed")
+        self.assertClose(self.my.roots[0].children[0].x, 1, "X child translate failed")
+        self.assertClose(self.my.roots[0].y, 0, "X translate Y effect")
+        self.assertClose(self.my.roots[0].z, [5, 6, 7], "X translate Y effect")
+        a = self.my.roots[0].children[0]
+        a.translate([1, 0, 0])
+        self.assertClose(a.x, 2, "Subtranslate failed")
+        self.assertClose(a.parent.x, 1, "Subtranslate affected parent")
+        self.assertClose(a.parent.children[1].x, 1, "Subtranslate affected sibling")
+
+    def test_center(self):
+        stubs = Morphology(self._z_parts()[1:])
+        stubs.center()
+        self.assertClose(stubs.origin, 0, "Center failed, origin not 0")
+        self.assertClose(stubs.roots[0].x, [1, 0, -1], "Center failed, not geom mean")
+        self.mz.center()
+        self.assertClose(self.mz.roots[0].x, [0, 1, 2], "Center failed for single root")

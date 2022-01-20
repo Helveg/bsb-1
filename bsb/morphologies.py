@@ -126,6 +126,10 @@ class Branch:
         return len(getattr(self, type(self).vectors[0]))
 
     @property
+    def parent(self):
+        return self._parent
+
+    @property
     def points(self):
         """
         Return the vectors of this branch as a matrix.
@@ -512,9 +516,9 @@ class SubTree:
             if center is not None:
                 points -= center
             rotated_points = rot.apply(points)
-            if origin is not None:
+            if center is not None:
                 rotated_points += center
-            b.x, b.y, b.z = rotated_points
+            b.x, b.y, b.z = rotated_points.T
 
     def root_rotate(self, rot):
         """

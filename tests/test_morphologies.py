@@ -18,7 +18,6 @@ class TestMorphologies(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        test_setup.prep_morphologies()
 
     def test_int_ordered_iter(self):
         unit = bsb.output._is_invalid_order

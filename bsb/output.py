@@ -507,7 +507,7 @@ class MorphologyRepository(HDF5TreeHandler):
             g.attrs["branch_labels"] = branch._full_labels
             l = g.create_group("labels")
             for label, label_mask in branch._label_masks.items():
-                l.create_dataset(label, data=label_mask, dtype=np.bool)
+                l.create_dataset(label, data=label_mask, dtype=bool)
 
     def import_repository(self, repository, overwrite=False):
         with repository.load() as external_handle:

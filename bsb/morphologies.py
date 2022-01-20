@@ -500,32 +500,29 @@ class SubTree:
         t = tuple(np.concatenate(tuple(getattr(b, v) for b in branches)) for v in vectors)
         return np.column_stack(t) if matrix else t
 
-    def rotate(self, v0, v, origin=None):
+    def rotate(self, rot, center=None):
         """
-        Rotate a morphology to be oriented as vector v, supposing to start from orientation v0.
-        norm(v) = norm(v0) = 1
-        Rotation matrix R, representing a rotation of angle alpha around vector k
+        Point rotation
+
+        :param rot: Scipy rotation
+        :type: :class:`scipy.spatial.transform.Rotation`
         """
-        R = get_rotation_matrix(v0, v)
         for b in self.branches:
             points = b.as_matrix(with_radius=False)
             if center is not None:
                 points -= center
-            rotated_points = R.dot(points.T)
+            rotated_points = rot.apply(points)
             if origin is not None:
-                rotated_points = (rotated_points.T + origin).T
+                rotated_points += center
             b.x, b.y, b.z = rotated_points
 
-    def root_rotate(self, v0, v):
+    def root_rotate(self, rot):
         """
         Rotate the subtree emanating from each root around the start of the root
         """
         for b in self.roots:
             group = SubTree([b])
-            p = group.origin
-            group.translate(-p)
-            group.rotate(v0, v)
-            group.translate(p)
+            group.rotate(rot, group.origin)
 
     def translate(self, point):
         for p, vector in zip(point, Branch.vectors):
@@ -727,46 +724,3 @@ class RadialGeometry(Representation):
 class NoGeometry(Representation):
     def validate(self):
         pass
-
-
-def get_rotation_matrix(v0, v):
-    I = np.identity(3)
-    # Reduce 1-size dimensions
-    v0 = np.array(v0).squeeze()
-    v = np.array(v).squeeze()
-    # Normalize orientation vectors
-    v0 = v0 / np.linalg.norm(v0)
-    v = v / np.linalg.norm(v0)
-    alpha = np.arccos(np.dot(v0, v))
-
-    if math.isclose(alpha, 0.0, rel_tol=1e-4):
-        report(
-            "Rotating morphology between parallel orientation vectors, {} and {}!".format(
-                v0, v
-            ),
-            level=3,
-        )
-        # We will not rotate the morphology, thus R = I
-        return I
-    elif math.isclose(alpha, np.pi, rel_tol=1e-4):
-        report(
-            "Rotating morphology between antiparallel orientation vectors, {} and {}!".format(
-                v0, v
-            ),
-            level=3,
-        )
-        # We will rotate the morphology of 180° around a vector orthogonal to
-        # the starting vector v0 (the same would be if we take the ending vector
-        # v). We set the first and third components to 1; the second one is
-        # obtained to have the scalar product with v0 equal to 0
-        kx = 1
-        kz = 1
-        ky = -(v0[0] + v0[2]) / v0[1]
-        k = np.array([kx, ky, kz])
-    else:
-        k = (np.cross(v0, v)) / math.sin(alpha)
-        k = k / np.linalg.norm(k)
-
-    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
-    # Compute and return the rotation matrix using Rodrigues' formula
-    return I + math.sin(alpha) * K + (1 - math.cos(alpha)) * np.linalg.matrix_power(K, 2)

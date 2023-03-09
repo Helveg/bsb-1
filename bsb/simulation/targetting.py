@@ -70,7 +70,7 @@ class RepresentativesTargetting(CellModelTargetting, classmap_entry="representat
 
 
 @config.node
-class ByIdTargetting(CellTargetting, classmap_entry="by_id"):
+class ByIdTargetting(CellTargetting, classmap_entry="id"):
     """
     Targetting mechanism (use ``"type": "by_id"``) to target all given identifiers.
     """
@@ -82,7 +82,7 @@ class ByIdTargetting(CellTargetting, classmap_entry="by_id"):
 
 
 @config.node
-class ByLabelTargetting(CellTargetting, classmap_entry="by_label"):
+class ByLabelTargetting(CellTargetting, classmap_entry="label"):
     """
     Targetting mechanism (use ``"type": "by_label"``) to target all given labels.
     """
